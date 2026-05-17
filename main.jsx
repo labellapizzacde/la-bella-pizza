@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import "./style.css";
 
-const WHATSAPP_NUMBER = "595981000000"; // Cambiar por tu numero. Ej: 595981123456
+const WHATSAPP_NUMBER = "5493804135499"; // Cambiar por tu Cambiar WhatsAppnumero. Ej: 595981123456
 const STORE_NAME = "La Bella Pizza";
 const STORE_SUBTITLE = "Pizzas · Bebidas · Dulces · Promos";
 
