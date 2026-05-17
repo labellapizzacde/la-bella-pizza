@@ -1,2 +1,3 @@
-# la-bella-pizza
-Tienda online para venta de pizzas
+# La Bella Pizza
+
+Tienda online para venta de pizzas.
