@@ -1,32 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  ShoppingCart,
-  Search,
-  Plus,
-  Minus,
-  Trash2,
-  MessageCircle,
-  Menu,
-  X,
-  MapPin,
-  Store,
-  Truck,
-  CreditCard,
-  Banknote,
-  QrCode,
-  ArrowLeft,
-  Tag,
-  User,
-  Phone,
-  Mail,
-  FileText,
+  ShoppingCart, Search, Plus, Minus, Trash2, MessageCircle, Menu, X,
+  MapPin, Store, Truck, CreditCard, Banknote, QrCode, ArrowLeft, Tag,
+  User, Phone, Mail, FileText
 } from "lucide-react";
 import "./style.css";
 
-const WHATSAPP_NUMBER = "5493804135499"; // Cambiar por tu Cambiar WhatsAppnumero. Ej: 595981123456
+const WHATSAPP_NUMBER = "5493804135499";
 const STORE_NAME = "La Bella Pizza";
 const STORE_SUBTITLE = "Pizzas · Bebidas · Dulces · Promos";
+const deliveryFee = 15000;
 
 const products = [
   {
@@ -138,7 +122,6 @@ const products = [
 ];
 
 const categories = ["Todos", "Pizzas", "Pizzas Dulces", "Bebidas", "Promos"];
-const deliveryFee = 15000;
 
 function formatPrice(value) {
   return new Intl.NumberFormat("es-PY", {
@@ -175,6 +158,7 @@ function App() {
     reference: "",
     timeSlot: "",
     notes: "",
+    locationLink: "",
   });
 
   const filteredProducts = useMemo(() => {
@@ -268,7 +252,7 @@ function App() {
       qr: "QR / Bancard manual",
     };
 
-    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
+    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   }
@@ -588,12 +572,48 @@ function DeliveryStep({ deliveryMethod, setDeliveryMethod, goNext }) {
 }
 
 function DetailsStep({ deliveryMethod, customer, updateCustomer, goNext }) {
+  function detectLocation() {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no permite detectar ubicacion.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const link = `https://www.google.com/maps?q=${lat},${lng}`;
+        updateCustomer("locationLink", link);
+        alert("Ubicacion detectada correctamente.");
+      },
+      () => {
+        alert("No se pudo detectar la ubicacion. Revisa los permisos del navegador.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }
+
   return (
     <div className="detailsStep">
       {deliveryMethod === "delivery" && (
         <div>
-          <button className="outlineBtn"><MapPin /> Detectar mi ubicacion</button>
-          <div className="fakeMap">Mapa de referencia<br />Aqui despues podemos integrar Google Maps</div>
+          <button type="button" onClick={detectLocation} className="outlineBtn"><MapPin /> Detectar mi ubicacion</button>
+
+          {customer.locationLink && (
+            <a className="locationLink" href={customer.locationLink} target="_blank" rel="noreferrer">
+              Ubicacion detectada: abrir en Google Maps
+            </a>
+          )}
+
+          <div className="fakeMap">
+            {customer.locationLink
+              ? "Ubicacion detectada. El link ira en el pedido de WhatsApp."
+              : "Toca el boton para detectar la ubicacion del cliente."}
+          </div>
         </div>
       )}
 
