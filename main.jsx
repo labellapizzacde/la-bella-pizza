@@ -10,7 +10,14 @@ import "./style.css";
 const WHATSAPP_NUMBER = "5493804135499";
 const STORE_NAME = "La Bella Pizza";
 const STORE_SUBTITLE = "Pizzas · Bebidas · Dulces · Promos";
-const deliveryFee = 15000;
+// Ubicacion provisoria del local: 3G Carwash, Ciudad del Este.
+const STORE_LAT = -25.5318875;
+const STORE_LNG = -54.608078125;
+
+// Regla de delivery: 1 km = Gs. 6.000, 2 km = Gs. 7.000, 3 km = Gs. 8.000...
+// Formula: Gs. 5.000 + Gs. 1.000 por km, redondeando para arriba.
+const DELIVERY_BASE = 5000;
+const DELIVERY_PER_KM = 1000;
 
 const products = [
   {
@@ -131,6 +138,30 @@ function formatPrice(value) {
   }).format(value);
 }
 
+function calculateDistanceKm(lat1, lng1, lat2, lng2) {
+  const earthRadiusKm = 6371;
+  const toRadians = (degrees) => degrees * Math.PI / 180;
+
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+}
+
+function calculateDeliveryCost(distanceKm) {
+  const deliveryKm = Math.max(1, Math.ceil(distanceKm));
+  const deliveryCost = DELIVERY_BASE + deliveryKm * DELIVERY_PER_KM;
+  return { deliveryKm, deliveryCost };
+}
+
 function uniqueCartKey(productId, selectedExtras) {
   const extraIds = selectedExtras.map((extra) => extra.id).sort().join("-");
   return `${productId}-${extraIds || "sin-extras"}`;
@@ -159,6 +190,9 @@ function App() {
     timeSlot: "",
     notes: "",
     locationLink: "",
+    distanceKm: "",
+    deliveryKm: "",
+    deliveryCost: 0,
   });
 
   const filteredProducts = useMemo(() => {
@@ -170,7 +204,7 @@ function App() {
   }, [selectedCategory, query]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.unitTotal * item.quantity, 0);
-  const shipping = deliveryMethod === "delivery" && cart.length > 0 ? deliveryFee : 0;
+  const shipping = deliveryMethod === "delivery" && cart.length > 0 ? customer.deliveryCost : 0;
   const discount = coupon.trim().toUpperCase() === "BELLA10" ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal + shipping - discount;
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -252,7 +286,7 @@ function App() {
       qr: "QR / Bancard manual",
     };
 
-    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
+    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0ADistancia estimada: ${customer.distanceKm ? `${customer.distanceKm} km` : "-"}%0AKm cobrado: ${customer.deliveryKm || "-"}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   }
@@ -583,8 +617,15 @@ function DetailsStep({ deliveryMethod, customer, updateCustomer, goNext }) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const link = `https://www.google.com/maps?q=${lat},${lng}`;
+        const distance = calculateDistanceKm(STORE_LAT, STORE_LNG, lat, lng);
+        const { deliveryKm, deliveryCost } = calculateDeliveryCost(distance);
+
         updateCustomer("locationLink", link);
-        alert("Ubicacion detectada correctamente.");
+        updateCustomer("distanceKm", distance.toFixed(1));
+        updateCustomer("deliveryKm", String(deliveryKm));
+        updateCustomer("deliveryCost", deliveryCost);
+
+        alert(`Ubicacion detectada. Delivery calculado: ${formatPrice(deliveryCost)}`);
       },
       () => {
         alert("No se pudo detectar la ubicacion. Revisa los permisos del navegador.");
@@ -610,9 +651,19 @@ function DetailsStep({ deliveryMethod, customer, updateCustomer, goNext }) {
           )}
 
           <div className="fakeMap">
-            {customer.locationLink
-              ? "Ubicacion detectada. El link ira en el pedido de WhatsApp."
-              : "Toca el boton para detectar la ubicacion del cliente."}
+            {customer.locationLink ? (
+              <div>
+                <strong>Ubicacion detectada</strong>
+                <br />
+                Distancia aproximada: {customer.distanceKm} km
+                <br />
+                Km cobrado: {customer.deliveryKm} km
+                <br />
+                Delivery: {formatPrice(customer.deliveryCost)}
+              </div>
+            ) : (
+              "Toca el boton para detectar la ubicacion del cliente y calcular el delivery."
+            )}
           </div>
         </div>
       )}
