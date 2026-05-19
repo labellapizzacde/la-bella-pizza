@@ -131,11 +131,9 @@ const products = [
 const categories = ["Todos", "Pizzas", "Pizzas Dulces", "Bebidas", "Promos"];
 
 function formatPrice(value) {
-  return new Intl.NumberFormat("es-PY", {
-    style: "currency",
-    currency: "PYG",
+  return `Gs. ${new Intl.NumberFormat("es-PY", {
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value)}`;
 }
 
 function calculateDistanceKm(lat1, lng1, lat2, lng2) {
@@ -286,7 +284,29 @@ function App() {
       qr: "QR / Bancard manual",
     };
 
-    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0ADistancia estimada: ${customer.distanceKm ? `${customer.distanceKm} km` : "-"}%0ADelivery calculado: ${formatPrice(shipping)}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
+    const locationText = customer.locationLink
+      ? `📍 Ubicacion del cliente:%0A${customer.locationLink}%0A%0A`
+      : "";
+
+    const message =
+      `${locationText}` +
+      `🍕 Pedido en ${STORE_NAME}%0A%0A` +
+      `${productLines.join("%0A%0A")}%0A%0A` +
+      `Subtotal: ${formatPrice(subtotal)}%0A` +
+      `Delivery: ${formatPrice(shipping)}%0A` +
+      `Descuento: ${formatPrice(discount)}%0A` +
+      `Total: ${formatPrice(total)}%0A%0A` +
+      `Entrega: ${deliveryText}%0A` +
+      `Pago: ${paymentLabels[paymentMethod]}%0A%0A` +
+      `Datos del cliente:%0A` +
+      `Nombre: ${customer.name || "-"}%0A` +
+      `Telefono: ${customer.phone || "-"}%0A` +
+      `Email: ${customer.email || "-"}%0A` +
+      `CI/RUC: ${customer.document || "-"}%0A` +
+      `Direccion: ${customer.address || "-"}%0A` +
+      `Referencia: ${customer.reference || "-"}%0A` +
+      `Franja horaria: ${customer.timeSlot || "-"}%0A` +
+      `Notas: ${customer.notes || "-"}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   }
@@ -725,7 +745,7 @@ function Summary({ subtotal, shipping, discount, total }) {
   return (
     <div className="summary">
       <div><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div>
-      <div><span>Gastos de envio</span><strong>{formatPrice(shipping)}</strong></div>
+      <div><span>Delivery</span><strong>{formatPrice(shipping)}</strong></div>
       <div><span>Descuento</span><strong>{formatPrice(discount)}</strong></div>
       <div className="total"><span>Total</span><strong>{formatPrice(total)}</strong></div>
     </div>
