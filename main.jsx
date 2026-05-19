@@ -286,7 +286,7 @@ function App() {
       qr: "QR / Bancard manual",
     };
 
-    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0ADistancia estimada: ${customer.distanceKm ? `${customer.distanceKm} km` : "-"}%0AKm cobrado: ${customer.deliveryKm || "-"}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
+    const message = `Hola, quiero hacer este pedido en ${STORE_NAME}:%0A%0A${productLines.join("%0A%0A")}%0A%0ASubtotal: ${formatPrice(subtotal)}%0AEnvio: ${formatPrice(shipping)}%0ADescuento: ${formatPrice(discount)}%0ATotal: ${formatPrice(total)}%0A%0AEntrega: ${deliveryText}%0APago: ${paymentLabels[paymentMethod]}%0A%0ADatos:%0ANombre: ${customer.name || "-"}%0ATelefono: ${customer.phone || "-"}%0AEmail: ${customer.email || "-"}%0ACI/RUC: ${customer.document || "-"}%0ADireccion: ${customer.address || "-"}%0AUbicacion: ${customer.locationLink || "-"}%0ADistancia estimada: ${customer.distanceKm ? `${customer.distanceKm} km` : "-"}%0ADelivery calculado: ${formatPrice(shipping)}%0AReferencia: ${customer.reference || "-"}%0AFranja horaria: ${customer.timeSlot || "-"}%0ANotas: ${customer.notes || "-"}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   }
@@ -653,16 +653,14 @@ function DetailsStep({ deliveryMethod, customer, updateCustomer, goNext }) {
           <div className="fakeMap">
             {customer.locationLink ? (
               <div>
-                <strong>Ubicacion detectada</strong>
-                <br />
-                Distancia aproximada: {customer.distanceKm} km
-                <br />
-                Km cobrado: {customer.deliveryKm} km
+                <strong>Ubicacion detectada ✅</strong>
                 <br />
                 Delivery: {formatPrice(customer.deliveryCost)}
+                <br />
+                <small>Costo calculado automaticamente segun tu ubicacion.</small>
               </div>
             ) : (
-              "Toca el boton para detectar la ubicacion del cliente y calcular el delivery."
+              "Toca el boton para detectar tu ubicacion y calcular el delivery."
             )}
           </div>
         </div>
